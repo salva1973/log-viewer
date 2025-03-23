@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-linux": "pkg server.js --targets node18-linux-x64 --output logviewer",
     "build": "pkg server.js --targets node18-mac-x64 --output logviewer",
+    "dev": "nodemon server.js",
     "start": "node server.js"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "express-basic-auth": "^1.2.1"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.3.2"
+    "@yao-pkg/pkg": "^6.3.2",
+    "nodemon": "^3.1.9"
   }
 }

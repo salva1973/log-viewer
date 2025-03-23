@@ -1,121 +1,100 @@
-// logviewer.js (macOS edition)
+// server.js
 
-require('dotenv').config()
-const express = require('express')
-const basicAuth = require('express-basic-auth')
-const { exec } = require('child_process')
-const path = require('path')
+require('dotenv').config();
+const express = require('express');
+const basicAuth = require('express-basic-auth');
+const { exec } = require('child_process');
+const path = require('path');
 
-const app = express()
-const PORT = process.env.PORT || 8080
-const USERNAME = process.env.LOGVIEW_USER || 'admin'
-const PASSWORD = process.env.LOGVIEW_PASS || 'changeme'
-const LOGFILE = process.env.LOGFILE || '/var/log/system.log'
+const app = express();
+
+const PORT = process.env.PORT || 8080;
+const USERNAME = process.env.LOGVIEW_USER || 'admin';
+const PASSWORD = process.env.LOGVIEW_PASS || 'supersecret';
+
+const LOG_MODE = process.env.LOG_MODE || 'mac'; // "mac" or "linux"
+const SYSTEMD_SERVICE = process.env.SERVICE_NAME || 'monitor-uploads.service';
+const MAC_LOG_PATH = process.env.MAC_LOG_PATH || '/var/log/system.log';
+const TAIL_LINES = process.env.TAIL_LINES || 50;
 
 // --- BASIC AUTH ---
-app.use(
-  basicAuth({
-    users: { [USERNAME]: PASSWORD },
-    challenge: true,
-    realm: 'LogViewer',
-  })
-)
+app.use(basicAuth({
+  users: { [USERNAME]: PASSWORD },
+  challenge: true,
+  realm: 'LogViewer'
+}));
 
 // --- STATIC CSS ---
-app.use('/static', express.static(path.join(__dirname, 'public')))
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
-// --- LOG VIEWER PAGE ---
+// --- UTILITY: Get Log Command ---
+function getLogCommand() {
+  if (LOG_MODE === 'linux') {
+    return `journalctl -u ${SYSTEMD_SERVICE} --no-pager -n ${TAIL_LINES}`;
+  } else {
+    return `tail -n ${TAIL_LINES} ${MAC_LOG_PATH}`;
+  }
+}
+
+// --- MAIN ROUTE ---
 app.get('/', (req, res) => {
-  const lines = parseInt(req.query.lines) || 100
-  const filter = req.query.filter || ''
-  const page = parseInt(req.query.page) || 1
-  const autoRefresh = req.query.auto === 'true'
-  const offset = (page - 1) * lines
-
-  const tailCommand = `tail -n ${offset + lines} ${LOGFILE}${
-    filter ? ` | grep "${filter}"` : ''
-  }`
-
-  exec(tailCommand, (error, stdout, stderr) => {
+  exec(getLogCommand(), (error, stdout, stderr) => {
     if (error) {
-      return res
-        .status(500)
-        .send(
-          `<pre class="log-output error">Error fetching logs:\n${stderr}</pre>`
-        )
+      return res.status(500).send(`<pre class="log-output error">❌ Error fetching logs:\n${stderr}</pre>`);
     }
 
-    const logLines = stdout.trim().split('\n')
-    const paginatedLines = logLines.slice(-lines).join('\n')
-    const nextPage = page + 1
-    const prevPage = Math.max(1, page - 1)
-
-    res.setHeader('Content-Type', 'text/html')
+    res.setHeader('Content-Type', 'text/html');
     res.send(`
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <title>macOS Log Viewer</title>
+        <title>Log Viewer</title>
+        <meta http-equiv="refresh" content="5">
         <link rel="stylesheet" href="/static/style.css">
-        ${autoRefresh ? '<meta http-equiv="refresh" content="10">' : ''}
+        <script>
+          window.onload = function () {
+            if (localStorage.getItem('theme') === 'dark') {
+              document.body.classList.add('dark-mode');
+            }
+          };
+        </script>
       </head>
       <body>
         <div class="container">
-          <h1>📄 macOS Log Viewer (${path.basename(LOGFILE)})</h1>
-          <form method="GET" action="/">
-            <label>Lines:
-              <input type="number" name="lines" value="${lines}" min="10" max="1000">
-            </label>
-            <label>Filter:
-              <input type="text" name="filter" value="${filter}" placeholder="Optional keyword">
-            </label>
-            <label>
-              <input type="checkbox" name="auto" value="true" ${
-                autoRefresh ? 'checked' : ''
-              }> Auto-refresh
-            </label>
-            <input type="hidden" name="page" value="1">
-            <button type="submit">Refresh</button>
-          </form>
-          <div class="pagination">
-            <a href="/?lines=${lines}&filter=${filter}&page=${prevPage}&auto=${autoRefresh}">&laquo; Prev</a>
-            <span>Page ${page}</span>
-            <a href="/?lines=${lines}&filter=${filter}&page=${nextPage}&auto=${autoRefresh}">Next &raquo;</a>
+          <div class="button-row">
+            <form method="GET" action="/download">
+              <button type="submit">⬇️ Download Logs</button>
+            </form>
+            <button onclick="toggleDarkMode()">🌓 Toggle Dark Mode</button>
           </div>
-          <form method="GET" action="/download">
-            <input type="hidden" name="lines" value="${lines}">
-            <input type="hidden" name="filter" value="${filter}">
-            <button type="submit">Download Logs</button>
-          </form>
-          <pre class="log-output">${paginatedLines}</pre>
+          <h1>📋 Log Viewer (${LOG_MODE})</h1>
+          <pre class="log-output">${stdout.trim()}</pre>
         </div>
+        <script>
+          function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+          }
+        </script>
       </body>
       </html>
-    `)
-  })
-})
+    `);
+  });
+});
 
-// --- DOWNLOAD LOGS ---
+// --- DOWNLOAD ENDPOINT ---
 app.get('/download', (req, res) => {
-  const lines = parseInt(req.query.lines) || 100
-  const filter = req.query.filter || ''
-  const cmd = `tail -n ${lines} ${LOGFILE}${
-    filter ? ` | grep "${filter}"` : ''
-  }`
-
-  exec(cmd, (error, stdout, stderr) => {
+  exec(getLogCommand(), (error, stdout, stderr) => {
     if (error) {
-      return res.status(500).send('Error generating log download.')
+      return res.status(500).send('Error fetching logs');
     }
+    res.setHeader('Content-disposition', 'attachment; filename=logs.txt');
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(stdout);
+  });
+});
 
-    res.setHeader('Content-Disposition', 'attachment; filename=logs.txt')
-    res.setHeader('Content-Type', 'text/plain')
-    res.send(stdout)
-  })
-})
-
-// --- START SERVER ---
 app.listen(PORT, () => {
-  console.log(`Log viewer running on http://localhost:${PORT}`)
-})
+  console.log(`🔧 Log viewer running at http://localhost:${PORT} (${LOG_MODE} mode)`);
+});
