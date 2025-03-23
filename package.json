@@ -1,0 +1,23 @@
+{
+  "name": "log-viewer",
+  "version": "1.0.0",
+  "description": "log viewer",
+  "license": "ISC",
+  "author": "Salvatore Vivolo",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-linux": "pkg server.js --targets node18-linux-x64 --output logviewer",
+    "build": "pkg server.js --targets node18-mac-x64 --output logviewer",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-basic-auth": "^1.2.1"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.3.2"
+  }
+}
