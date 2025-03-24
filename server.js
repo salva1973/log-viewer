@@ -66,7 +66,7 @@ const USERNAME = process.env.LOGVIEW_USER || 'admin'
 const PASSWORD = process.env.LOGVIEW_PASS || 'supersecret'
 
 const LOG_MODE = process.env.LOG_MODE || 'mac' // "mac" or "linux"
-const SYSTEMD_SERVICE = process.env.SERVICE_NAME || 'logviewer.service'
+const SYSTEMD_SERVICE = process.env.SERVICE_NAME || 'monitor-uploads.service'
 const MAC_LOG_PATH = process.env.MAC_LOG_PATH || '/var/log/system.log'
 const TAIL_LINES = process.env.TAIL_LINES || 50
 const THEME = process.env.THEME || 'dark' // "dark" or "light"
