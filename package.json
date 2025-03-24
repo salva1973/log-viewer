@@ -8,22 +8,24 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "pkg server.js --targets node22-linux-x64 --output logviewer",
-    "build-mac": "pkg server.js --targets node22-mac-x64 --output logviewer",
+    "build": "pkg . --targets node22-linux-x64 --output logviewer",
+    "build-mac": "pkg . --targets node22-mac-x64 --output logviewer",
     "dev": "nodemon server.js",
     "start": "node server.js"
   },
+  "bin": "server.js",
   "pkg": {
     "assets": [
-      "cert/*",
       "public/**/*",
+      "cert/**/*",
       ".env"
     ]
   },
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "express-basic-auth": "^1.2.1"
+    "express-basic-auth": "^1.2.1",
+    "fs-extra": "^11.3.0"
   },
   "devDependencies": {
     "@yao-pkg/pkg": "^6.3.2",

@@ -32,8 +32,10 @@ body {
 }
 
 .container {
-  max-width: 900px;
-  margin: auto;
+  /* max-width: 900px; */
+  max-width: 95%; /* increased width for more horizontal space */
+  margin: 2rem auto;
+  /* margin: auto; */
   background: var(--box-bg);
   padding: 2rem;
   border-radius: 12px;
@@ -57,6 +59,8 @@ pre.log-output {
   font-size: 0.9rem;
   line-height: 1.4;
   max-height: 600px;
+  width: 100%;
+  box-sizing: border-box;
 
   /* Fix scroll aliasing */
   -webkit-font-smoothing: antialiased;
@@ -88,5 +92,10 @@ button:hover {
 .footer-buttons {
   display: flex;
   justify-content: center;
-  margin-top: 2rem;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.footer-buttons button {
+  margin: 0 10px;
 }

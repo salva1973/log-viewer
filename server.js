@@ -6,51 +6,20 @@ const basicAuth = require('express-basic-auth')
 const { exec } = require('child_process')
 const https = require('https')
 const fs = require('fs')
-const fse = require('fs-extra')
-const os = require('os')
 const path = require('path')
 
 const app = express()
 
-function resolvePath(p) {
-  return path.join(__dirname, p)
-}
+const resolvePath = (p) => path.join(__dirname, p)
 
-// --- STATIC CSS ---
-if (process.pkg) {
-  const tmp = path.join(os.tmpdir(), 'logviewer-static')
-  fse.ensureDirSync(tmp)
-  const embeddedPublicPath = path.join(
-    process.pkg ? path.dirname(process.execPath) : __dirname,
-    'public'
-  )
-  fse.copySync(embeddedPublicPath, tmp)
-  app.use('/static', express.static(tmp))
-} else {
-  app.use('/static', express.static(resolvePath('public')))
-}
+app.use('/static', express.static(resolvePath('public')))
 
 require('dotenv').config({ path: resolvePath('.env') })
 
-// Load SSL certs
-// const keyPath = path.join(__dirname, 'cert', 'key.pem')
-// const certPath = path.join(__dirname, 'cert', 'cert.pem')
-const embeddedCertPath = path.join(
-  process.pkg ? path.dirname(process.execPath) : __dirname,
-  'cert'
-)
-
-const tmpCertPath = path.join(os.tmpdir(), 'logviewer-cert')
-fse.ensureDirSync(tmpCertPath)
-fse.copySync(embeddedCertPath, tmpCertPath)
-
-const keyPath = path.join(tmpCertPath, 'key.pem')
-const certPath = path.join(tmpCertPath, 'cert.pem')
-
 // SSL configuration
 const sslOptions = {
-  key: fs.readFileSync(keyPath),
-  cert: fs.readFileSync(certPath),
+  key: fs.readFileSync(resolvePath('cert/key.pem')),
+  cert: fs.readFileSync(resolvePath('cert/cert.pem')),
   secureOptions:
     require('constants').SSL_OP_NO_TLSv1 |
     require('constants').SSL_OP_NO_TLSv1_1,
@@ -64,12 +33,11 @@ const sslOptions = {
 const PORT = process.env.PORT || 8686
 const USERNAME = process.env.LOGVIEW_USER || 'admin'
 const PASSWORD = process.env.LOGVIEW_PASS || 'supersecret'
-
-const LOG_MODE = process.env.LOG_MODE || 'mac' // "mac" or "linux"
+const LOG_MODE = process.env.LOG_MODE || 'mac'
 const SYSTEMD_SERVICE = process.env.SERVICE_NAME || 'monitor-uploads.service'
 const MAC_LOG_PATH = process.env.MAC_LOG_PATH || '/var/log/system.log'
 const TAIL_LINES = process.env.TAIL_LINES || 50
-const THEME = process.env.THEME || 'dark' // "dark" or "light"
+const THEME = process.env.THEME || 'dark'
 
 // --- BASIC AUTH ---
 app.use(
@@ -87,16 +55,11 @@ app.use((req, res, next) => {
   next()
 })
 
-// --- UTILITY: Get Log Command ---
-function getLogCommand() {
-  if (LOG_MODE === 'linux') {
-    return `journalctl -u ${SYSTEMD_SERVICE} --no-pager -n ${TAIL_LINES}`
-  } else {
-    return `tail -n ${TAIL_LINES} ${MAC_LOG_PATH}`
-  }
-}
+const getLogCommand = () =>
+  LOG_MODE === 'linux'
+    ? `journalctl -u ${SYSTEMD_SERVICE} --no-pager -n ${TAIL_LINES}`
+    : `tail -n ${TAIL_LINES} ${MAC_LOG_PATH}`
 
-// --- MAIN ROUTE ---
 app.get('/', (req, res) => {
   exec(getLogCommand(), (error, stdout, stderr) => {
     if (error) {
@@ -107,9 +70,6 @@ app.get('/', (req, res) => {
         )
     }
 
-    const isDark = THEME === 'dark'
-    const darkClass = isDark ? 'dark-mode' : ''
-
     res.setHeader('Content-Type', 'text/html')
     res.send(`
       <!DOCTYPE html>
@@ -117,17 +77,14 @@ app.get('/', (req, res) => {
       <head>
         <meta charset="UTF-8" />
         <title>Log Viewer</title>
-        <meta http-equiv="refresh" content="5">
         <link rel="stylesheet" href="/static/style.css">
         <script>
           window.onload = function () {
             const defaultTheme = '${THEME}';
             const savedTheme = localStorage.getItem('theme');
-    
             if (!savedTheme) {
               localStorage.setItem('theme', defaultTheme);
             }
-
             if (localStorage.getItem('theme') === 'dark') {
               document.body.classList.add('dark-mode');
             }
@@ -137,12 +94,16 @@ app.get('/', (req, res) => {
       <body>
         <div class="container">
           <h1>Monitor Uploads Log Viewer</h1>
+          <p class="log-info">Showing last <strong>${TAIL_LINES}</strong> entries.</p>
           <pre class="log-output">${stdout.trim()}</pre>
-        </div>
-        <div class="footer-buttons">
-          <form method="GET" action="/download">
-            <button type="submit">Download Logs</button>
-          </form>
+          <div class="footer-buttons">
+            <form method="GET" action="/" style="display:inline-block;">
+              <button type="submit">Refresh Logs</button>
+            </form>
+            <form method="GET" action="/download" style="display:inline-block;">
+              <button type="submit">Download Logs</button>
+            </form>
+          </div>
         </div>
       </body>
       </html>
@@ -150,7 +111,6 @@ app.get('/', (req, res) => {
   })
 })
 
-// --- DOWNLOAD ENDPOINT ---
 app.get('/download', (req, res) => {
   exec(getLogCommand(), (error, stdout, stderr) => {
     if (error) {
