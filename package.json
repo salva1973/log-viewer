@@ -8,10 +8,17 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-linux": "pkg server.js --targets node18-linux-x64 --output logviewer",
-    "build": "pkg server.js --targets node18-mac-x64 --output logviewer",
+    "build": "pkg server.js --targets node22-linux-x64 --output logviewer",
+    "build-mac": "pkg server.js --targets node22-mac-x64 --output logviewer",
     "dev": "nodemon server.js",
     "start": "node server.js"
+  },
+  "pkg": {
+    "assets": [
+      "cert/*",
+      "public/**/*",
+      ".env"
+    ]
   },
   "dependencies": {
     "dotenv": "^16.4.7",

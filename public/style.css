@@ -15,7 +15,7 @@ body.dark-mode {
   --text-color: #eee;
   --box-bg: #1e1e1e;
   --log-bg: #000;
-  --log-text: #a0ffa0;
+  --log-text: #6cff6c;
   --btn-bg: #4f9fff;
   --btn-hover: #3273dc;
   --error-bg: #600000;
@@ -23,7 +23,7 @@ body.dark-mode {
 }
 
 body {
-  font-family: "Segoe UI", sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   padding: 2rem;
@@ -37,35 +37,13 @@ body {
   background: var(--box-bg);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   transition: background 0.3s;
 }
 
 h1 {
   text-align: center;
   margin-bottom: 1.5rem;
-}
-
-.button-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-button {
-  background-color: var(--btn-bg);
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease-in-out;
-}
-
-button:hover {
-  background-color: var(--btn-hover);
 }
 
 pre.log-output {
@@ -79,10 +57,36 @@ pre.log-output {
   font-size: 0.9rem;
   line-height: 1.4;
   max-height: 600px;
-  transition: background 0.3s, color 0.3s;
+
+  /* Fix scroll aliasing */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transform: translateZ(0);
 }
 
 pre.error {
   background: var(--error-bg);
   color: var(--error-text);
+}
+
+button {
+  background-color: #28a745; /* Green */
+  color: white;
+  padding: 0.8rem 1.6rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1rem; /* Bigger font */
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
+.footer-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
 }
